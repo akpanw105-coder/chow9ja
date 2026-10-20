@@ -349,6 +349,7 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     flex: 1,
+    minHeight: 320,
     position: 'relative',
     backgroundColor: ChowTheme.colors.brown,
   },

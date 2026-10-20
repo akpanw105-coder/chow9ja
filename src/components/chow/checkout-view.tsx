@@ -8,6 +8,7 @@ import {
   TextInput,
   Modal,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChowTheme } from '@/constants/chow-theme';
 import { useChow } from '@/context/chow-context';
 import { ChowButton } from './chow-button';
@@ -29,6 +30,8 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     createOrder,
     user,
   } = useChow();
+
+  const insets = useSafeAreaInsets();
 
   const [selectedAddressId, setSelectedAddressId] = useState<string>(
     addresses.find((a) => a.isDefault)?.id || addresses[0]?.id || ''
@@ -88,7 +91,10 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     <View style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}>
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: 100 + Math.max(insets.bottom, 16) },
+        ]}>
         {/* Step Indicator */}
         <View style={styles.stepBanner}>
           <Text style={styles.stepTitle}>Final Step: Delivery & Payment</Text>
@@ -254,7 +260,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
       </ScrollView>
 
       {/* Sticky Bottom Payment Button */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <ChowButton
           title={
             isProcessingPayment
@@ -571,6 +577,9 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     padding: ChowTheme.spacing.base,
     paddingBottom: 32,
+    width: '100%',
+    maxWidth: 640,
+    alignSelf: 'center',
   },
   modalHeader: {
     flexDirection: 'row',

@@ -9,6 +9,7 @@ import {
   Modal,
   ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChowTheme } from '@/constants/chow-theme';
 import { useChow, FoodItem } from '@/context/chow-context';
 import { FoodCard } from '@/components/chow/food-card';
@@ -41,6 +42,8 @@ export default function ChowMainScreen() {
     authLoading,
     setCurrentTrackingOrderId,
   } = useChow();
+
+  const insets = useSafeAreaInsets();
 
   // Navigation Sub-views
   const [activeScreen, setActiveScreen] = useState<
@@ -138,7 +141,10 @@ export default function ChowMainScreen() {
       {activeScreen === 'menu' && (
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.menuScroll}>
+          contentContainerStyle={[
+            styles.menuScroll,
+            { paddingBottom: 80 + Math.max(insets.bottom, 16) },
+          ]}>
           {/* Delivery Location Strip */}
           <View style={styles.locationStrip}>
             <View style={styles.locationLeft}>
@@ -264,7 +270,10 @@ export default function ChowMainScreen() {
           ) : (
             <ScrollView
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.cartContent}>
+              contentContainerStyle={[
+                styles.cartContent,
+                { paddingBottom: 80 + Math.max(insets.bottom, 16) },
+              ]}>
               {cart.map((item) => (
                 <View key={item.cartItemId} style={styles.cartItemCard}>
                   <View style={styles.cartItemInfo}>
@@ -395,7 +404,10 @@ export default function ChowMainScreen() {
           </View>
           <ScrollView
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.ordersContent}>
+            contentContainerStyle={[
+              styles.ordersContent,
+              { paddingBottom: 80 + Math.max(insets.bottom, 16) },
+            ]}>
             {orders.map((ord) => (
               <TouchableOpacity
                 key={ord.id}
@@ -452,7 +464,7 @@ export default function ChowMainScreen() {
       )}
 
       {/* Persistent Bottom Tab Bar (Matching Chow Brand Palette) */}
-      <View style={styles.bottomTabBar}>
+      <View style={[styles.bottomTabBar, { paddingBottom: Math.max(insets.bottom, 6), height: 56 + Math.max(insets.bottom, 0) }]}>
         <TouchableOpacity
           onPress={() => setActiveScreen('menu')}
           style={styles.tabBarItem}>
@@ -1027,7 +1039,7 @@ const styles = StyleSheet.create({
     color: ChowTheme.colors.brown,
   },
   bottomTabBar: {
-    height: 56,
+    minHeight: 56,
     backgroundColor: ChowTheme.colors.cream,
     borderTopWidth: 1,
     borderTopColor: ChowTheme.colors.border,

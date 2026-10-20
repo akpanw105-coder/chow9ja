@@ -8,6 +8,7 @@ import {
   TextInput,
   Modal,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChowTheme } from '@/constants/chow-theme';
 import { useChow } from '@/context/chow-context';
 import { ChowButton } from './chow-button';
@@ -30,6 +31,8 @@ export const ProfileAddressesView: React.FC<ProfileAddressesViewProps> = ({
     deleteAddress,
     signOut,
   } = useChow();
+
+  const insets = useSafeAreaInsets();
 
   const [activeTab, setActiveTab] = useState<'profile' | 'addresses'>('profile');
 
@@ -109,7 +112,7 @@ export const ProfileAddressesView: React.FC<ProfileAddressesViewProps> = ({
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}>
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 24, 40) }]}>
         {activeTab === 'profile' ? (
           <View>
             <View style={styles.card}>
@@ -491,6 +494,9 @@ const styles = StyleSheet.create({
     backgroundColor: ChowTheme.colors.cream,
     borderRadius: ChowTheme.radii.xl,
     padding: ChowTheme.spacing.base,
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
   },
   modalHeader: {
     flexDirection: 'row',

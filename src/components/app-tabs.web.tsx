@@ -6,26 +6,31 @@ import {
   TabTriggerSlotProps,
   TabListProps,
 } from 'expo-router/ui';
-import { Pressable, View, StyleSheet } from 'react-native';
+import { Pressable, View, StyleSheet, useWindowDimensions } from 'react-native';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 import { ChowTheme } from '@/constants/chow-theme';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 
 export default function AppTabs() {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
+
   return (
     <Tabs>
       <TabSlot style={{ height: '100%', backgroundColor: ChowTheme.colors.cream }} />
-      <TabList asChild>
-        <CustomTabList>
-          <TabTrigger name="home" href="/" asChild>
-            <TabButton>🍲 Chow Delicacies</TabButton>
-          </TabTrigger>
-          <TabTrigger name="explore" href="/explore" asChild>
-            <TabButton>⚙️ Kitchen Ops (Admin)</TabButton>
-          </TabTrigger>
-        </CustomTabList>
-      </TabList>
+      {isDesktop && (
+        <TabList asChild>
+          <CustomTabList>
+            <TabTrigger name="home" href="/" asChild>
+              <TabButton>🍲 Chow Delicacies</TabButton>
+            </TabTrigger>
+            <TabTrigger name="explore" href="/explore" asChild>
+              <TabButton>⚙️ Kitchen Ops (Admin)</TabButton>
+            </TabTrigger>
+          </CustomTabList>
+        </TabList>
+      )}
     </Tabs>
   );
 }

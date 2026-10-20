@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
     color: ChowTheme.colors.nudeLight,
     textAlign: 'center',
     lineHeight: 18,
-    maxWidth: 290,
+    maxWidth: '90%',
   },
   card: {
     backgroundColor: ChowTheme.colors.creamCard,

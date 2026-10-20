@@ -11,6 +11,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChowTheme } from '@/constants/chow-theme';
 import { useChow, FoodItem, OrderStatus } from '@/context/chow-context';
 import { ChowButton } from './chow-button';
@@ -32,6 +33,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   } = useChow();
 
   const [activeTab, setActiveTab] = useState<'orders' | 'menu' | 'sales'>('orders');
+  const insets = useSafeAreaInsets();
 
   // New meal modal state
   const [showAddMealModal, setShowAddMealModal] = useState(false);
@@ -141,7 +143,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}>
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 24, 50) }]}>
         {/* TAB 1: INCOMING ORDERS */}
         {activeTab === 'orders' && (
           <View>
@@ -488,7 +490,9 @@ const styles = StyleSheet.create({
   tabItem: {
     flex: 1,
     paddingVertical: 12,
+    paddingHorizontal: 4,
     alignItems: 'center',
+    justifyContent: 'center',
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
@@ -497,9 +501,10 @@ const styles = StyleSheet.create({
     backgroundColor: ChowTheme.colors.nudeLight,
   },
   tabLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: ChowTheme.colors.textSecondary,
+    textAlign: 'center',
   },
   tabLabelActive: {
     color: ChowTheme.colors.brown,
@@ -771,7 +776,8 @@ const styles = StyleSheet.create({
     marginVertical: 14,
   },
   kpiCard: {
-    width: '48%',
+    flex: 1,
+    minWidth: 140,
     backgroundColor: ChowTheme.colors.white,
     padding: ChowTheme.spacing.base,
     borderRadius: ChowTheme.radii.lg,
@@ -842,6 +848,9 @@ const styles = StyleSheet.create({
     backgroundColor: ChowTheme.colors.cream,
     borderRadius: ChowTheme.radii.xl,
     padding: ChowTheme.spacing.base,
+    width: '100%',
+    maxWidth: 580,
+    alignSelf: 'center',
   },
   modalHeader: {
     flexDirection: 'row',

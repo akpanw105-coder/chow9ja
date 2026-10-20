@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   TextInput,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChowTheme } from '@/constants/chow-theme';
 import { FoodItem, FoodOption, useChow } from '@/context/chow-context';
 import { ChowButton } from './chow-button';
@@ -24,6 +25,7 @@ export const FoodDetailModal: React.FC<FoodDetailModalProps> = ({
   onGoToCart,
 }) => {
   const { addToCart } = useChow();
+  const insets = useSafeAreaInsets();
   const [quantity, setQuantity] = useState(1);
   const [selectedProtein, setSelectedProtein] = useState<FoodOption>(food.proteins[0]);
   const [selectedSwallow, setSelectedSwallow] = useState<FoodOption | undefined>(
@@ -74,7 +76,10 @@ export const FoodDetailModal: React.FC<FoodDetailModalProps> = ({
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}>
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: 100 + Math.max(insets.bottom, 16) },
+        ]}>
         {/* Title, Prep Time & Spice */}
         <View style={styles.titleSection}>
           <Text style={styles.foodTitle}>{food.name}</Text>
@@ -224,7 +229,7 @@ export const FoodDetailModal: React.FC<FoodDetailModalProps> = ({
       </ScrollView>
 
       {/* Bottom Floating Bar */}
-      <View style={styles.footerBar}>
+      <View style={[styles.footerBar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View style={styles.priceColumn}>
           <Text style={styles.footerLabel}>Total Amount</Text>
           <Text style={styles.footerPrice}>₦{totalPrice.toLocaleString()}</Text>
