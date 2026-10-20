@@ -3,11 +3,12 @@
 # dependencies
 node_modules/
 
-# Expo
+# Expo & Web Builds
 .expo/
 dist/
 web-build/
 expo-env.d.ts
+.vercel/
 
 # Native
 .kotlin/

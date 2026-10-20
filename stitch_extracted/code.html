@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Chow - Order Tracking</title>
+<!-- Tailwind CSS CDN with forms and container queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Playfair Display & Plus Jakarta Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Playfair+Display:ital,wght@0,600;0,700;1,600&amp;display=swap" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            chow: {
+              base: '#08110D',
+              surface: '#0E1D16',
+              card: '#14271F',
+              border: '#1F372C',
+              gold: '#E5A95C',
+              goldHover: '#CF9346',
+              goldSoft: '#F6E5CC',
+              muted: '#7E998B',
+              accentFlame: '#FF9A3D'
+            }
+          },
+          fontFamily: {
+            serif: ['"Playfair Display"', 'Georgia', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+<!-- BEGIN: Custom Page Styles -->
+<style data-purpose="custom-scroll-and-glow">
+    /* Hide scrollbars while allowing touch scrolling */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    /* Glow highlights matching luxury dark aesthetic */
+    .gold-glow {
+      box-shadow: 0 0 25px rgba(229, 169, 92, 0.22);
+    }
+    .flame-glow {
+      box-shadow: 0 0 30px rgba(255, 154, 61, 0.28);
+    }
+  </style>
+<!-- END: Custom Page Styles -->
+</head>
+<body class="bg-[#050B08] text-slate-100 font-sans min-h-screen flex items-center justify-center p-0 sm:p-4 selection:bg-chow-gold selection:text-chow-base">
+<!-- BEGIN: Mobile Container (iOS Phone Shell) -->
+<main class="w-full max-w-[412px] h-[100dvh] sm:h-[880px] bg-chow-base flex flex-col shadow-2xl sm:rounded-[44px] overflow-hidden border border-white/5 relative">
+<!-- BEGIN: iOS Status Bar -->
+<header class="w-full pt-3 px-7 pb-2 flex justify-between items-center z-30 select-none shrink-0" data-purpose="ios-status-bar">
+<!-- Time -->
+<span class="text-[14px] font-semibold tracking-tight text-slate-200">9:41</span>
+<!-- iOS Dynamic Island cutout replica indicator for top notch context -->
+<div class="hidden sm:block w-24 h-4 bg-black/60 rounded-full"></div>
+<!-- System Icons -->
+<div class="flex items-center gap-1.5 text-slate-200">
+<!-- Cellular Signal -->
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<path d="M2 17h3v4H2v-4zm5-5h3v9H7v-9zm5-4h3v13h-3V8zm5-5h3v18h-3V3z"></path>
+</svg>
+<!-- Wifi -->
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98C20.93 5.9 16.69 4 12 4zm0 3.5c3.74 0 7.15 1.48 9.69 3.89L12 18.3 2.31 11.39C4.85 8.98 8.26 7.5 12 7.5z"></path>
+</svg>
+<!-- Battery -->
+<div class="w-5 h-2.5 border border-slate-300 rounded-sm p-0.5 flex items-center">
+<div class="h-full w-3/4 bg-slate-200 rounded-[1px]"></div>
+</div>
+</div>
+</header>
+<!-- END: iOS Status Bar -->
+<!-- BEGIN: Navigation Bar -->
+<nav class="px-5 py-3 flex items-center justify-between border-b border-white/5 z-20 shrink-0 bg-chow-base/90 backdrop-blur-md" data-purpose="navigation-header">
+<!-- Back Action -->
+<button aria-label="Back to Previous Screen" class="w-10 h-10 rounded-full bg-chow-surface border border-chow-border flex items-center justify-center text-slate-300 active:scale-95 transition-transform" onclick="window.history.back()" type="button">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+<!-- Screen Title -->
+<div class="text-center">
+<h1 class="text-base font-semibold tracking-wide text-white">Order Tracking</h1>
+<p class="text-[11px] text-chow-muted">Live Dispatch Updates</p>
+</div>
+<!-- Help / Info Button -->
+<button aria-label="Order Help and Info" class="w-10 h-10 rounded-full bg-chow-surface border border-chow-border flex items-center justify-center text-chow-gold active:scale-95 transition-transform" type="button">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="9" stroke-width="2"></circle>
+<path d="M12 16v-4m0-4h.01" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</nav>
+<!-- END: Navigation Bar -->
+<!-- BEGIN: Scrollable Content Body -->
+<section class="flex-1 overflow-y-auto no-scrollbar px-5 pt-3 pb-8 space-y-5" data-purpose="tracking-details-feed">
+<!-- BEGIN: Real-Time Status Hero -->
+<div class="rounded-3xl bg-gradient-to-b from-chow-surface to-chow-card p-5 border border-chow-border relative overflow-hidden text-center" data-purpose="status-hero-banner">
+<!-- Ambient radial glow behind the flame icon -->
+<div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-chow-gold/15 rounded-full blur-2xl pointer-events-none"></div>
+<!-- Glowing Pot / Flame Icon Badge -->
+<div class="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#25180A] to-[#3B2610] border border-chow-gold/40 flex items-center justify-center flame-glow mb-3 relative">
+<span class="text-2xl animate-pulse">🔥</span>
+</div>
+<span class="inline-block px-3 py-1 text-[11px] font-semibold text-chow-gold tracking-widest uppercase bg-chow-gold/10 rounded-full border border-chow-gold/20 mb-1">
+          On The Way
+        </span>
+<h2 class="text-3xl font-serif font-bold text-chow-gold tracking-tight mt-1 mb-1">
+          Arriving in 18 mins
+        </h2>
+<p class="text-xs text-slate-300 max-w-xs mx-auto leading-relaxed">
+          Mama Cass Kitchen has packed your order. Dispatched for drop-off at hostel reception.
+        </p>
+</div>
+<!-- END: Real-Time Status Hero -->
+<!-- BEGIN: Visual Route Waypoint Map -->
+<div class="rounded-2xl bg-chow-surface p-4 border border-chow-border relative" data-purpose="visual-route-milestones">
+<div class="flex items-center justify-between mb-3 pb-2 border-b border-white/5">
+<span class="text-xs font-semibold uppercase tracking-wider text-chow-gold">Route Waypoints</span>
+<span class="text-[11px] text-chow-muted">Lekki → Campus</span>
+</div>
+<!-- Stylized transit diagram -->
+<div class="relative px-2 py-3">
+<!-- Connection line -->
+<div class="absolute left-6 top-5 bottom-5 w-0.5 bg-gradient-to-b from-chow-gold via-chow-gold to-chow-border"></div>
+<!-- Waypoint 1: Restaurant -->
+<div class="relative flex items-center gap-4 mb-5">
+<div class="w-8 h-8 rounded-full bg-chow-card border-2 border-chow-gold flex items-center justify-center z-10 text-chow-gold text-xs shadow-md">
+              🍲
+            </div>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<p class="text-xs font-medium text-slate-200">Mama Cass Kitchen (Lekki)</p>
+<span class="text-[10px] text-chow-gold font-mono">Picked Up</span>
+</div>
+<p class="text-[11px] text-chow-muted">Order handed over to dispatcher</p>
+</div>
+</div>
+<!-- Waypoint 2: Main Gate -->
+<div class="relative flex items-center gap-4 mb-5">
+<div class="w-8 h-8 rounded-full bg-chow-gold text-chow-base font-bold flex items-center justify-center z-10 text-xs gold-glow ring-4 ring-chow-gold/20">
+              🛵
+            </div>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<p class="text-xs font-medium text-white">Campus Main Gate</p>
+<span class="text-[10px] text-chow-accentFlame font-mono font-semibold animate-pulse">In Transit</span>
+</div>
+<p class="text-[11px] text-slate-300">Rider entering campus checkpoint</p>
+</div>
+</div>
+<!-- Waypoint 3: Hostel Drop-off -->
+<div class="relative flex items-center gap-4">
+<div class="w-8 h-8 rounded-full bg-chow-card border border-chow-border flex items-center justify-center z-10 text-slate-400 text-xs">
+              📍
+            </div>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<p class="text-xs font-medium text-slate-400">Moremi Hall Hostel Drop-off</p>
+<span class="text-[10px] text-chow-muted font-mono">Est. 2:23 PM</span>
+</div>
+<p class="text-[11px] text-chow-muted">Hostel Porter / Front Desk Reception</p>
+</div>
+</div>
+</div>
+</div>
+<!-- END: Visual Route Waypoint Map -->
+<!-- BEGIN: Step-by-Step Status Milestones -->
+<div class="rounded-2xl bg-chow-surface p-4 border border-chow-border" data-purpose="progress-stepper">
+<h3 class="text-xs font-semibold uppercase tracking-wider text-slate-300 mb-3">Milestone Progress</h3>
+<ol class="space-y-4 text-xs">
+<!-- Step 1: Complete -->
+<li class="flex items-start gap-3">
+<div class="mt-0.5 w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center shrink-0">
+<svg class="w-3 h-3" fill="currentColor" viewbox="0 0 20 20">
+<path clip-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" fill-rule="evenodd"></path>
+</svg>
+</div>
+<div class="flex-1 flex justify-between items-start">
+<div>
+<p class="font-medium text-slate-200">Order Confirmed &amp; Paid online</p>
+<p class="text-[11px] text-chow-muted">Verified payment via Paystack</p>
+</div>
+<span class="text-[11px] font-mono text-chow-muted">1:45 PM</span>
+</div>
+</li>
+<!-- Step 2: Complete -->
+<li class="flex items-start gap-3">
+<div class="mt-0.5 w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center shrink-0">
+<svg class="w-3 h-3" fill="currentColor" viewbox="0 0 20 20">
+<path clip-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" fill-rule="evenodd"></path>
+</svg>
+</div>
+<div class="flex-1 flex justify-between items-start">
+<div>
+<p class="font-medium text-slate-200">Kitchen Preparing Meal</p>
+<p class="text-[11px] text-chow-muted">Fresh egusi soup &amp; pounded yam</p>
+</div>
+<span class="text-[11px] font-mono text-chow-muted">1:52 PM</span>
+</div>
+</li>
+<!-- Step 3: Complete & Dispatched -->
+<li class="flex items-start gap-3">
+<div class="mt-0.5 w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center shrink-0">
+<svg class="w-3 h-3" fill="currentColor" viewbox="0 0 20 20">
+<path clip-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" fill-rule="evenodd"></path>
+</svg>
+</div>
+<div class="flex-1 flex justify-between items-start">
+<div>
+<p class="font-medium text-chow-gold">Order Dispatched</p>
+<p class="text-[11px] text-slate-300">Handed over to courier Ibrahim</p>
+</div>
+<span class="text-[11px] font-mono text-chow-gold">2:05 PM</span>
+</div>
+</li>
+<!-- Step 4: Pending / In Progress -->
+<li class="flex items-start gap-3 opacity-90">
+<div class="mt-0.5 w-5 h-5 rounded-full border-2 border-chow-gold flex items-center justify-center shrink-0">
+<div class="w-1.5 h-1.5 rounded-full bg-chow-gold animate-ping"></div>
+</div>
+<div class="flex-1 flex justify-between items-start">
+<div>
+<p class="font-medium text-slate-200">Arrived at Campus Drop-off</p>
+<p class="text-[11px] text-chow-muted">Hostel porter desk drop-off zone</p>
+</div>
+<span class="text-[11px] font-mono text-chow-muted">Est. 2:23 PM</span>
+</div>
+</li>
+<!-- Step 5: Final Delivery -->
+<li class="flex items-start gap-3 opacity-40">
+<div class="mt-0.5 w-5 h-5 rounded-full border border-chow-border flex items-center justify-center shrink-0">
+<div class="w-1.5 h-1.5 rounded-full bg-transparent"></div>
+</div>
+<div class="flex-1 flex justify-between items-start">
+<div>
+<p class="font-medium text-slate-300">Order Delivered</p>
+<p class="text-[11px] text-chow-muted">Awaiting student collection</p>
+</div>
+<span class="text-[11px] font-mono text-chow-muted">--:--</span>
+</div>
+</li>
+</ol>
+</div>
+<!-- END: Step-by-Step Status Milestones -->
+<!-- BEGIN: Delivery Coordinator Contact Card -->
+<div class="rounded-2xl bg-chow-surface p-4 border border-chow-border" data-purpose="delivery-coordinator-card">
+<div class="flex items-center gap-3">
+<!-- Coordinator Avatar Placeholder -->
+<div class="w-12 h-12 rounded-full bg-gradient-to-tr from-chow-card to-chow-border border border-chow-gold/30 flex items-center justify-center shrink-0">
+<span class="text-sm font-bold text-chow-gold">IB</span>
+</div>
+<!-- Coordinator Info -->
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-1.5">
+<h4 class="text-sm font-semibold text-white truncate">Ibrahim</h4>
+<span class="px-1.5 py-0.5 rounded text-[10px] bg-chow-border text-chow-gold">Chow Dispatch</span>
+</div>
+<p class="text-xs text-chow-muted flex items-center gap-1 mt-0.5">
+<span>🛵 Blue Motorcycle</span>
+<span>•</span>
+<span class="text-emerald-400">Active</span>
+</p>
+</div>
+<!-- Contact Buttons -->
+<div class="flex items-center gap-2">
+<!-- SMS / Message Button -->
+<a class="w-9 h-9 rounded-full bg-chow-card border border-chow-border flex items-center justify-center text-slate-200 hover:text-chow-gold active:scale-95 transition-all" href="sms:+2348101234567" title="Send SMS">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</a>
+<!-- Call Coordinator Pill Button -->
+<a class="px-3 py-2 rounded-full bg-chow-gold hover:bg-chow-goldHover text-chow-base font-semibold text-xs flex items-center gap-1.5 active:scale-95 transition-all shadow" href="tel:+2348101234567">
+<svg class="w-3.5 h-3.5 fill-current" viewbox="0 0 20 20">
+<path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 4V3z"></path>
+</svg>
+<span>Call</span>
+</a>
+</div>
+</div>
+<!-- Direct Hostel Hand-off Note -->
+<div class="mt-3 pt-2.5 border-t border-white/5 flex items-start gap-2">
+<svg class="w-3.5 h-3.5 text-chow-gold mt-0.5 shrink-0" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<p class="text-[11px] text-chow-muted leading-tight">
+            Manual delivery coordination by Chow Admin for direct hostel drop-off.
+          </p>
+</div>
+</div>
+<!-- END: Delivery Coordinator Contact Card -->
+<!-- BEGIN: Order Summary Accordion -->
+<div class="rounded-2xl bg-chow-surface p-4 border border-chow-border" data-purpose="order-summary-card">
+<div class="flex items-center justify-between pb-3 border-b border-white/5">
+<div>
+<p class="text-xs font-semibold text-white">Order #CHW-89241</p>
+<span class="text-[10px] text-chow-muted">Paid via Paystack • Mama Cass Kitchen</span>
+</div>
+<div class="text-right">
+<p class="text-sm font-bold text-chow-gold">₦10,700</p>
+<span class="text-[10px] text-emerald-400 font-medium">Payment Verified</span>
+</div>
+</div>
+<!-- Item list -->
+<div class="py-3 space-y-2 border-b border-white/5 text-xs">
+<div class="flex items-center justify-between text-slate-200">
+<span>1x Egusi Soup &amp; Pounded Yam</span>
+<span class="font-mono text-chow-muted">₦5,000</span>
+</div>
+<div class="flex items-center justify-between text-slate-200">
+<span>1x Jollof Rice &amp; Fish (Regular)</span>
+<span class="font-mono text-chow-muted">₦4,500</span>
+</div>
+<div class="flex items-center justify-between text-[11px] text-chow-muted">
+<span>Delivery &amp; Service Fee</span>
+<span class="font-mono">₦1,200</span>
+</div>
+</div>
+<!-- Receipt Link -->
+<div class="pt-2 text-center">
+<button class="text-xs text-chow-gold hover:underline font-medium inline-flex items-center gap-1" data-purpose="view-receipt-action" type="button">
+<span>View Full Receipt</span>
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+</div>
+<!-- END: Order Summary Accordion -->
+<!-- BEGIN: Navigation / Action Buttons -->
+<div class="pt-2 space-y-3" data-purpose="secondary-actions">
+<!-- Back to Home Button -->
+<a class="w-full py-3.5 px-4 rounded-full bg-chow-card hover:bg-chow-border border border-chow-gold/30 text-chow-gold text-sm font-semibold tracking-wide flex items-center justify-center gap-2 active:scale-98 transition-all" href="#home">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>Back to Home</span>
+</a>
+</div>
+<!-- END: Navigation / Action Buttons -->
+</section>
+<!-- END: Scrollable Content Body -->
+<!-- BEGIN: iOS Home Indicator Bar -->
+<footer class="w-full pb-2 pt-1 flex justify-center bg-chow-base shrink-0 select-none" data-purpose="ios-home-indicator">
+<div class="w-32 h-1 bg-white/20 rounded-full"></div>
+</footer>
+<!-- END: iOS Home Indicator Bar -->
+</main>
+<!-- END: Mobile Container -->
+</body></html>
