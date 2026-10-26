@@ -77,7 +77,7 @@ export interface Order {
   specialInstructions?: string;
   paymentMethod: 'Paystack Card' | 'Bank Transfer (Online)' | 'USSD';
   paymentReference: string;
-  paymentStatus: 'Paid' | 'Processing' | 'Failed';
+  paymentStatus: 'Paid' | 'Processing' | 'Failed' | 'paid (test mode)' | 'payment simulated';
   createdAt: string;
   estimatedDeliveryTime: string;
 }
@@ -266,9 +266,9 @@ interface ChowContextType {
     address: DeliveryAddress;
     paymentMethod: 'Paystack Card' | 'Bank Transfer (Online)' | 'USSD';
     specialInstructions?: string;
-  }) => Order;
+  }) => Promise<Order>;
   updateOrderStatus: (orderId: string, status: OrderStatus, note?: string) => void;
-  updateOrderPaymentStatus: (orderId: string, status: 'Paid' | 'Processing' | 'Failed') => void;
+  updateOrderPaymentStatus: (orderId: string, status: 'Paid' | 'Processing' | 'Failed' | 'paid (test mode)' | 'payment simulated') => void;
 
   // User Profile & Addresses
   user: UserProfile;
@@ -618,7 +618,7 @@ export const ChowProvider = ({ children }: { children: ReactNode }) => {
   const clearCart = () => setCart([]);
 
   // ── Orders ──────────────────────────────────────────────────────────────────
-  const createOrder = ({
+  const createOrder = async ({
     address,
     paymentMethod,
     specialInstructions,
@@ -626,7 +626,7 @@ export const ChowProvider = ({ children }: { children: ReactNode }) => {
     address: DeliveryAddress;
     paymentMethod: 'Paystack Card' | 'Bank Transfer (Online)' | 'USSD';
     specialInstructions?: string;
-  }): Order => {
+  }): Promise<Order> => {
     const subtotal = cartSubtotal;
     const deliveryFee = 800;
     const serviceFee = 400;
@@ -648,7 +648,7 @@ export const ChowProvider = ({ children }: { children: ReactNode }) => {
         {
           status: 'placed',
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          note: `Payment authorized via ${paymentMethod}`,
+          note: `Payment simulated via ${paymentMethod} (Test Mode)`,
         },
         {
           status: 'confirmed',
@@ -659,8 +659,8 @@ export const ChowProvider = ({ children }: { children: ReactNode }) => {
       address,
       specialInstructions,
       paymentMethod,
-      paymentReference: `PSTK-${Math.floor(1000000000 + Math.random() * 9000000000)}`,
-      paymentStatus: 'Paid',
+      paymentReference: `TEST-SIM-${Math.floor(1000000000 + Math.random() * 9000000000)}`,
+      paymentStatus: 'payment simulated',
       createdAt: 'Just now',
       estimatedDeliveryTime: '20-30 mins',
     };
@@ -669,28 +669,50 @@ export const ChowProvider = ({ children }: { children: ReactNode }) => {
     setCurrentTrackingOrderId(orderId);
     clearCart();
 
-    // Persist to Supabase (fire-and-forget; errors logged but do not break UX)
-    if (session?.user) {
-      supabase
+    // Persist to Supabase orders table
+    try {
+      const payload: Record<string, unknown> = {
+        order_number: orderNumber,
+        subtotal,
+        delivery_fee: deliveryFee,
+        service_fee: serviceFee,
+        total,
+        status: 'confirmed',
+        payment_method: paymentMethod,
+        payment_reference: newOrder.paymentReference,
+        payment_status: 'payment simulated',
+        address_json: {
+          ...address,
+          customer_name: user?.fullName || 'Guest Customer',
+          customer_email: user?.email || '',
+          customer_phone: address.phoneNumber || user?.phone || '',
+        },
+        items_json: newOrder.items,
+        special_instructions: specialInstructions ?? null,
+      };
+
+      if (session?.user?.id) {
+        payload.user_id = session.user.id;
+      }
+
+      const { data, error } = await supabase
         .from('orders')
-        .insert({
-          order_number: orderNumber,
-          user_id: session.user.id,
-          subtotal,
-          delivery_fee: deliveryFee,
-          service_fee: serviceFee,
-          total,
-          status: 'confirmed',
-          payment_method: paymentMethod,
-          payment_reference: newOrder.paymentReference,
-          payment_status: 'Paid',
-          address_json: address as unknown as Record<string, unknown>,
-          items_json: cart as unknown as Record<string, unknown>[],
-          special_instructions: specialInstructions ?? null,
-        })
-        .then(({ error }) => {
-          if (error) console.warn('[Chow] Order persist error:', error.message);
-        });
+        .insert(payload)
+        .select()
+        .single();
+
+      if (error) {
+        console.warn('[Chow] Order persist notice:', error.message);
+      } else if (data && data.id) {
+        // Update local state with generated Supabase database UUID if returned
+        setOrders((prev) =>
+          prev.map((o) => (o.id === orderId ? { ...o, id: data.id } : o))
+        );
+        setCurrentTrackingOrderId(data.id);
+        return { ...newOrder, id: data.id };
+      }
+    } catch (dbErr) {
+      console.warn('[Chow] Unexpected error saving order to Supabase:', dbErr);
     }
 
     return newOrder;
@@ -728,8 +750,15 @@ export const ChowProvider = ({ children }: { children: ReactNode }) => {
       });
   };
 
-  const updateOrderPaymentStatus = (orderId: string, paymentStatus: 'Paid' | 'Processing' | 'Failed') =>
-    setOrders((prev) => prev.map((order) => (order.id === orderId ? { ...order, paymentStatus } : order)));
+  const updateOrderPaymentStatus = (
+    orderId: string,
+    paymentStatus: Order['paymentStatus']
+  ) =>
+    setOrders((prev) =>
+      prev.map((order) =>
+        order.id === orderId ? { ...order, paymentStatus } : order
+      )
+    );
 
   // ── Food Admin ──────────────────────────────────────────────────────────────
   const addFoodItem = (food: Omit<FoodItem, 'id' | 'rating' | 'reviewCount'>) => {

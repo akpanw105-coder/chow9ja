@@ -264,7 +264,11 @@ export const OrderTrackingView: React.FC<OrderTrackingViewProps> = ({
           <View style={styles.receiptPriceCol}>
             <Text style={styles.receiptTotal}>₦{order.total.toLocaleString()}</Text>
             <View style={styles.verifiedBadge}>
-              <Text style={styles.verifiedText}>Verified</Text>
+              <Text style={styles.verifiedText}>
+                {order.paymentStatus === 'payment simulated' || order.paymentStatus === 'paid (test mode)'
+                  ? 'Paid (Test Mode)'
+                  : 'Verified'}
+              </Text>
             </View>
           </View>
         </View>

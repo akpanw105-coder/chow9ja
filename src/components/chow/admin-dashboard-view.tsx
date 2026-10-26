@@ -44,7 +44,12 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
 
   // Sales analytics calculations
   const totalSalesRevenue = orders
-    .filter((o) => o.paymentStatus === 'Paid')
+    .filter(
+      (o) =>
+        o.paymentStatus === 'Paid' ||
+        o.paymentStatus === 'paid (test mode)' ||
+        o.paymentStatus === 'payment simulated'
+    )
     .reduce((sum, o) => sum + o.total, 0);
 
   const totalOrdersCount = orders.length;

@@ -39,7 +39,11 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<'Paystack Card' | 'Bank Transfer (Online)' | 'USSD'>('Paystack Card');
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [showNewAddressModal, setShowNewAddressModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
+  const [createdOrderNumber, setCreatedOrderNumber] = useState<string>('');
 
   // New address form state
   const [newTitle, setNewTitle] = useState('');
@@ -71,20 +75,49 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     setNewLandmark('');
   };
 
-  const handlePayAndPlaceOrder = () => {
-    if (!currentAddress) return;
+  const handlePayAndPlaceOrder = async () => {
+    // Guard against repeated clicks and missing address
+    if (isProcessingPayment) return;
+    setPaymentError(null);
+
+    if (!currentAddress) {
+      setPaymentError('Please select or add a delivery address to proceed.');
+      return;
+    }
+
+    if (cart.length === 0) {
+      setPaymentError('Your cart is empty. Please add items to checkout.');
+      return;
+    }
+
     setIsProcessingPayment(true);
 
-    // Simulate Paystack secure web checkout handshake
-    setTimeout(() => {
-      const order = createOrder({
+    try {
+      // Simulate real-world payment gateway verification handshake (e.g. 1.2s delay)
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+
+      const order = await createOrder({
         address: currentAddress,
         paymentMethod,
         specialInstructions: specialInstructions.trim() || undefined,
       });
+
+      setCreatedOrderId(order.id);
+      setCreatedOrderNumber(order.orderNumber);
       setIsProcessingPayment(false);
-      onOrderSuccess(order.id);
-    }, 1200);
+      setShowSuccessModal(true);
+    } catch (err: unknown) {
+      setIsProcessingPayment(false);
+      const msg = err instanceof Error ? err.message : 'Unable to complete test payment. Please try again.';
+      setPaymentError(msg);
+    }
+  };
+
+  const handleContinueToTracking = () => {
+    setShowSuccessModal(false);
+    if (createdOrderId) {
+      onOrderSuccess(createdOrderId);
+    }
   };
 
   return (
@@ -93,15 +126,32 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: 100 + Math.max(insets.bottom, 16) },
+          { paddingBottom: 120 + Math.max(insets.bottom, 16) },
         ]}>
+        {/* Mock Payment Test Banner */}
+        <View style={styles.testModeBanner}>
+          <View style={styles.testBadgeRow}>
+            <Text style={styles.testBadge}>MOCK GATEWAY</Text>
+            <Text style={styles.testModeTitle}>TEST PAYMENT — NO REAL MONEY IS CHARGED</Text>
+          </View>
+          <Text style={styles.testModeDesc}>
+            Payment will be simulated instantly. Your order will be stored with a unique ID and marked as paid (test mode).
+          </Text>
+        </View>
+
         {/* Step Indicator */}
         <View style={styles.stepBanner}>
           <Text style={styles.stepTitle}>Final Step: Delivery & Payment</Text>
           <Text style={styles.stepSubtitle}>
-            100% Secure Nigerian payment gateway (Paystack / Instant Transfer)
+            Simulated cashless Nigerian payment gateway (Paystack / Instant Transfer)
           </Text>
         </View>
+
+        {paymentError ? (
+          <View style={styles.errorAlert}>
+            <Text style={styles.errorText}>⚠️ {paymentError}</Text>
+          </View>
+        ) : null}
 
         {/* Delivery Address Section */}
         <View style={styles.sectionCard}>
@@ -261,17 +311,74 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
 
       {/* Sticky Bottom Payment Button */}
       <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+        <View style={styles.testModeMicroNotice}>
+          <Text style={styles.testModeMicroText}>🧪 TEST PAYMENT — NO REAL MONEY CHARGED</Text>
+        </View>
         <ChowButton
           title={
             isProcessingPayment
-              ? 'Verifying Paystack Payment...'
-              : `Pay ₦${grandTotal.toLocaleString()} Now`
+              ? 'Simulating Payment Verification...'
+              : `Pay ₦${grandTotal.toLocaleString()} Now (Test Mode)`
           }
           loading={isProcessingPayment}
+          disabled={isProcessingPayment}
           onPress={handlePayAndPlaceOrder}
           size="lg"
         />
       </View>
+
+      {/* Payment Success Screen Modal (Simulated Payment) */}
+      <Modal visible={showSuccessModal} animationType="fade" transparent>
+        <View style={styles.successModalOverlay}>
+          <View style={styles.successModalCard}>
+            <View style={styles.successIconBadge}>
+              <Text style={styles.successEmoji}>🎉</Text>
+            </View>
+
+            <View style={styles.successSimulatedTag}>
+              <Text style={styles.successSimulatedTagText}>PAYMENT SIMULATED • TEST MODE</Text>
+            </View>
+
+            <Text style={styles.successTitle}>Payment Successful!</Text>
+            <Text style={styles.successSub}>
+              Your test transaction was verified successfully. No real money was charged.
+            </Text>
+
+            <View style={styles.successReceiptBox}>
+              <View style={styles.successReceiptRow}>
+                <Text style={styles.successReceiptLabel}>Order Number:</Text>
+                <Text style={styles.successReceiptValue}>#{createdOrderNumber}</Text>
+              </View>
+              <View style={styles.successReceiptRow}>
+                <Text style={styles.successReceiptLabel}>Amount Paid:</Text>
+                <Text style={styles.successReceiptTotal}>₦{grandTotal.toLocaleString()}</Text>
+              </View>
+              <View style={styles.successReceiptRow}>
+                <Text style={styles.successReceiptLabel}>Method:</Text>
+                <Text style={styles.successReceiptValue}>{paymentMethod}</Text>
+              </View>
+              <View style={styles.successReceiptRow}>
+                <Text style={styles.successReceiptLabel}>Customer:</Text>
+                <Text style={styles.successReceiptValue}>
+                  {user?.fullName || currentAddress?.title || 'Customer'}
+                </Text>
+              </View>
+              <View style={styles.successReceiptRow}>
+                <Text style={styles.successReceiptLabel}>Status:</Text>
+                <View style={styles.successStatusPill}>
+                  <Text style={styles.successStatusPillText}>payment simulated</Text>
+                </View>
+              </View>
+            </View>
+
+            <ChowButton
+              title="View Order Confirmation & Track ➔"
+              size="lg"
+              onPress={handleContinueToTracking}
+            />
+          </View>
+        </View>
+      </Modal>
 
       {/* New Address Modal */}
       <Modal visible={showNewAddressModal} animationType="slide" transparent>
@@ -607,5 +714,165 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: ChowTheme.colors.textPrimary,
     marginBottom: 10,
+  },
+  testModeBanner: {
+    backgroundColor: ChowTheme.colors.brownDark,
+    borderRadius: ChowTheme.radii.lg,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1.5,
+    borderColor: ChowTheme.colors.nude,
+  },
+  testBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+    flexWrap: 'wrap',
+  },
+  testBadge: {
+    backgroundColor: ChowTheme.colors.brown,
+    color: ChowTheme.colors.cream,
+    fontSize: 9,
+    fontWeight: '900',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    letterSpacing: 0.5,
+  },
+  testModeTitle: {
+    color: ChowTheme.colors.cream,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    flex: 1,
+  },
+  testModeDesc: {
+    color: ChowTheme.colors.nudeLight,
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  errorAlert: {
+    backgroundColor: ChowTheme.colors.dangerLight,
+    padding: 10,
+    borderRadius: ChowTheme.radii.sm,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: ChowTheme.colors.danger,
+  },
+  errorText: {
+    color: ChowTheme.colors.danger,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  testModeMicroNotice: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  testModeMicroText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: ChowTheme.colors.brown,
+    letterSpacing: 0.5,
+  },
+  successModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(30, 15, 10, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: ChowTheme.spacing.base,
+  },
+  successModalCard: {
+    backgroundColor: ChowTheme.colors.cream,
+    borderRadius: ChowTheme.radii.xl,
+    padding: ChowTheme.spacing.xl,
+    width: '100%',
+    maxWidth: 480,
+    alignItems: 'center',
+    ...ChowTheme.shadows.prominent,
+  },
+  successIconBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: ChowTheme.colors.nudeLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: ChowTheme.colors.brown,
+  },
+  successEmoji: {
+    fontSize: 32,
+  },
+  successSimulatedTag: {
+    backgroundColor: ChowTheme.colors.brown,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: ChowTheme.radii.pill,
+    marginBottom: 8,
+  },
+  successSimulatedTagText: {
+    color: ChowTheme.colors.cream,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  successTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: ChowTheme.colors.brown,
+    fontFamily: ChowTheme.typography.serifFont,
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  successSub: {
+    fontSize: 12,
+    color: ChowTheme.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  successReceiptBox: {
+    backgroundColor: ChowTheme.colors.white,
+    borderRadius: ChowTheme.radii.md,
+    borderWidth: 1,
+    borderColor: ChowTheme.colors.border,
+    padding: 14,
+    width: '100%',
+    marginBottom: 20,
+    gap: 8,
+  },
+  successReceiptRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  successReceiptLabel: {
+    fontSize: 12,
+    color: ChowTheme.colors.textMuted,
+    fontWeight: '600',
+  },
+  successReceiptValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: ChowTheme.colors.textPrimary,
+  },
+  successReceiptTotal: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: ChowTheme.colors.brown,
+  },
+  successStatusPill: {
+    backgroundColor: ChowTheme.colors.successLight,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: ChowTheme.radii.pill,
+  },
+  successStatusPillText: {
+    color: ChowTheme.colors.success,
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
   },
 });
