@@ -30,6 +30,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
     updateFoodItem,
     addFoodItem,
     updateOrderStatus,
+    currentRole,
   } = useChow();
 
   const [activeTab, setActiveTab] = useState<'orders' | 'menu' | 'sales'>('orders');
@@ -41,6 +42,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   const [newMealDesc, setNewMealDesc] = useState('');
   const [newMealPrice, setNewMealPrice] = useState('');
   const [newMealCategory, setNewMealCategory] = useState<FoodItem['category']>('Rice Dishes');
+
+  // Guard against non-admin access (after all hooks)
+  if (currentRole !== 'admin') {
+    return null;
+  }
 
   // Sales analytics calculations
   const totalSalesRevenue = orders
@@ -54,7 +60,8 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
 
   const totalOrdersCount = orders.length;
   const completedOrdersCount = orders.filter((o) => o.status === 'delivered').length;
-  const inProgressCount = orders.filter((o) => o.status !== 'delivered').length;
+  const cancelledOrdersCount = orders.filter((o) => o.status === 'cancelled').length;
+  const inProgressCount = orders.filter((o) => o.status !== 'delivered' && o.status !== 'cancelled').length;
 
   const handleCreateMeal = () => {
     if (!newMealName.trim() || !newMealPrice.trim()) {
@@ -211,34 +218,87 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                     </View>
                   </View>
 
-                  {/* Order Stage Controls */}
+                  {/* Order Decision & Stage Controls */}
                   <View style={styles.stageActionsRow}>
-                    <Text style={styles.stageActionPrompt}>Update Stage:</Text>
-                    <View style={styles.stageButtons}>
-                      {(['cooking', 'dispatched', 'arrived', 'delivered'] as OrderStatus[]).map(
-                        (st) => {
-                          const isCurrent = ord.status === st;
-                          return (
-                            <TouchableOpacity
-                              key={st}
-                              onPress={() => updateOrderStatus(ord.id, st)}
-                              activeOpacity={0.8}
-                              style={[
-                                styles.stageBtn,
-                                isCurrent && styles.stageBtnActive,
-                              ]}>
-                              <Text
-                                style={[
-                                  styles.stageBtnText,
-                                  isCurrent && styles.stageBtnTextActive,
-                                ]}>
-                                {st}
-                              </Text>
-                            </TouchableOpacity>
-                          );
-                        }
+                    <View style={styles.stageActionHeaderRow}>
+                      <Text style={styles.stageActionPrompt}>Kitchen Order Decision:</Text>
+                      {ord.status === 'cancelled' && (
+                        <View style={styles.cancelledBadge}>
+                          <Text style={styles.cancelledBadgeText}>ORDER REJECTED / CANCELLED</Text>
+                        </View>
                       )}
                     </View>
+
+                    {/* Quick Accept / Reject Decision Row */}
+                    {ord.status !== 'delivered' && ord.status !== 'cancelled' && (
+                      <View style={styles.decisionButtonsRow}>
+                        {ord.status !== 'confirmed' && (
+                          <TouchableOpacity
+                            onPress={() => updateOrderStatus(ord.id, 'confirmed', 'Kitchen accepted your order')}
+                            activeOpacity={0.8}
+                            style={styles.acceptOrderBtn}>
+                            <Text style={styles.acceptOrderBtnText}>✓ Accept Order</Text>
+                          </TouchableOpacity>
+                        )}
+                        <TouchableOpacity
+                          onPress={() => {
+                            if (Platform.OS === 'web') {
+                              if (confirm('Are you sure you want to reject / cancel this order?')) {
+                                updateOrderStatus(ord.id, 'cancelled', 'Kitchen rejected/cancelled this order');
+                              }
+                            } else {
+                              Alert.alert(
+                                'Reject Order',
+                                'Are you sure you want to reject / cancel this order?',
+                                [
+                                  { text: 'Back', style: 'cancel' },
+                                  {
+                                    text: 'Yes, Reject Order',
+                                    style: 'destructive',
+                                    onPress: () => updateOrderStatus(ord.id, 'cancelled', 'Kitchen rejected/cancelled this order'),
+                                  },
+                                ]
+                              );
+                            }
+                          }}
+                          activeOpacity={0.8}
+                          style={styles.rejectOrderBtn}>
+                          <Text style={styles.rejectOrderBtnText}>✕ Reject / Cancel</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+
+                    {/* Stage Pipeline Buttons */}
+                    {ord.status !== 'cancelled' && (
+                      <View style={{ marginTop: 8 }}>
+                        <Text style={styles.stageSubPrompt}>Advance Pipeline Stage:</Text>
+                        <View style={styles.stageButtons}>
+                          {(['confirmed', 'cooking', 'dispatched', 'arrived', 'delivered'] as OrderStatus[]).map(
+                            (st) => {
+                              const isCurrent = ord.status === st;
+                              return (
+                                <TouchableOpacity
+                                  key={st}
+                                  onPress={() => updateOrderStatus(ord.id, st)}
+                                  activeOpacity={0.8}
+                                  style={[
+                                    styles.stageBtn,
+                                    isCurrent && styles.stageBtnActive,
+                                  ]}>
+                                  <Text
+                                    style={[
+                                      styles.stageBtnText,
+                                      isCurrent && styles.stageBtnTextActive,
+                                    ]}>
+                                    {st === 'confirmed' ? 'Accepted' : st}
+                                  </Text>
+                                </TouchableOpacity>
+                              );
+                            }
+                          )}
+                        </View>
+                      </View>
+                    )}
                   </View>
                 </View>
               );
@@ -334,6 +394,12 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                 <Text style={styles.kpiLabel}>Courier Logistics</Text>
                 <Text style={styles.kpiValue}>1 Active</Text>
                 <Text style={styles.kpiSub}>Ibrahim (Blue Motorcycle)</Text>
+              </View>
+
+              <View style={styles.kpiCard}>
+                <Text style={styles.kpiLabel}>Rejected / Cancelled</Text>
+                <Text style={styles.kpiValue}>{cancelledOrdersCount}</Text>
+                <Text style={styles.kpiSub}>Excluded from active kitchen queue</Text>
               </View>
             </View>
 
@@ -644,14 +710,72 @@ const styles = StyleSheet.create({
   },
   stageActionsRow: {
     backgroundColor: ChowTheme.colors.cream,
-    padding: 8,
+    padding: 10,
     borderRadius: ChowTheme.radii.sm,
+  },
+  stageActionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
   },
   stageActionPrompt: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
     color: ChowTheme.colors.brown,
+    textTransform: 'uppercase',
+  },
+  stageSubPrompt: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: ChowTheme.colors.textMuted,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+  },
+  cancelledBadge: {
+    backgroundColor: ChowTheme.colors.dangerLight,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: ChowTheme.radii.pill,
+  },
+  cancelledBadgeText: {
+    color: ChowTheme.colors.danger,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  decisionButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
     marginBottom: 6,
+  },
+  acceptOrderBtn: {
+    flex: 1,
+    backgroundColor: ChowTheme.colors.success,
+    paddingVertical: 8,
+    borderRadius: ChowTheme.radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  acceptOrderBtnText: {
+    color: ChowTheme.colors.white,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  rejectOrderBtn: {
+    flex: 1,
+    backgroundColor: ChowTheme.colors.dangerLight,
+    borderWidth: 1,
+    borderColor: ChowTheme.colors.danger,
+    paddingVertical: 8,
+    borderRadius: ChowTheme.radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rejectOrderBtnText: {
+    color: ChowTheme.colors.danger,
+    fontSize: 11,
+    fontWeight: '800',
   },
   stageButtons: {
     flexDirection: 'row',

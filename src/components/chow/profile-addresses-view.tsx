@@ -155,18 +155,20 @@ export const ProfileAddressesView: React.FC<ProfileAddressesViewProps> = ({
               />
             </View>
 
-            {/* Admin Switcher Access */}
-            <View style={styles.card}>
-              <Text style={styles.cardHeading}>Operational Controls</Text>
-              <Text style={styles.cardSub}>
-                Manage live food orders, update prices, menu items and sales ledger.
-              </Text>
-              <ChowButton
-                title="Switch to Chow Admin Dashboard"
-                variant="secondary"
-                onPress={onOpenAdmin}
-              />
-            </View>
+            {/* Admin Switcher Access — only for authorized admins */}
+            {user.role === 'admin' && (
+              <View style={styles.card}>
+                <Text style={styles.cardHeading}>Operational Controls</Text>
+                <Text style={styles.cardSub}>
+                  Manage live food orders, update prices, menu items and sales ledger.
+                </Text>
+                <ChowButton
+                  title="Switch to Chow Admin Dashboard"
+                  variant="secondary"
+                  onPress={onOpenAdmin}
+                />
+              </View>
+            )}
 
             {/* Sign out */}
             <View style={{ marginTop: 8 }}>

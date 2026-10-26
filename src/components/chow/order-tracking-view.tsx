@@ -104,6 +104,8 @@ export const OrderTrackingView: React.FC<OrderTrackingViewProps> = ({
         return 'Arrived at your location!';
       case 'delivered':
         return 'Delivered & Completed';
+      case 'cancelled':
+        return 'Order Cancelled / Rejected';
       default:
         return 'Estimated ~20 mins';
     }

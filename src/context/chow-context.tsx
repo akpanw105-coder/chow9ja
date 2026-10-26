@@ -61,7 +61,8 @@ export type OrderStatus =
   | 'cooking'
   | 'dispatched'
   | 'arrived'
-  | 'delivered';
+  | 'delivered'
+  | 'cancelled';
 
 export interface Order {
   id: string;
@@ -726,6 +727,7 @@ export const ChowProvider = ({ children }: { children: ReactNode }) => {
       dispatched: 'Dispatched for drop-off with courier',
       arrived: 'Courier arrived at delivery location',
       delivered: 'Order marked delivered. Enjoy your chow!',
+      cancelled: 'Order rejected/cancelled by Chow kitchen',
     };
     const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     setOrders((prev) =>

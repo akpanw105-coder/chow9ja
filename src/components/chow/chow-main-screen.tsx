@@ -47,9 +47,19 @@ export default function ChowMainScreen() {
   const insets = useSafeAreaInsets();
 
   // Navigation Sub-views
-  const [activeScreen, setActiveScreen] = useState<
-    'menu' | 'cart' | 'checkout' | 'tracking' | 'orders' | 'profile' | 'admin'
-  >('menu');
+  const [selectedTabScreen, setSelectedTabScreen] = useState<
+    'menu' | 'cart' | 'checkout' | 'tracking' | 'orders' | 'profile' | 'admin' | null
+  >(null);
+
+  // When selectedTabScreen is null (e.g. after login/session restore), route admins to 'admin' and customers to 'menu'
+  const activeScreen: 'menu' | 'cart' | 'checkout' | 'tracking' | 'orders' | 'profile' | 'admin' =
+    selectedTabScreen ?? (currentRole === 'admin' ? 'admin' : 'menu');
+
+  const setActiveScreen = (
+    screen: 'menu' | 'cart' | 'checkout' | 'tracking' | 'orders' | 'profile' | 'admin'
+  ) => {
+    setSelectedTabScreen(screen);
+  };
 
   // Search & Filtering
   const [selectedCategory, setSelectedCategory] = useState<string>('All Delicacies');
@@ -71,7 +81,13 @@ export default function ChowMainScreen() {
   }
 
   if (!isAuthenticated) {
-    return <AuthOnboardingView onSuccess={() => setActiveScreen('menu')} />;
+    return (
+      <AuthOnboardingView
+        onSuccess={() => {
+          setSelectedTabScreen(null);
+        }}
+      />
+    );
   }
 
   // Filter food items
