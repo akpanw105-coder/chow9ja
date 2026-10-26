@@ -131,13 +131,6 @@ export const AuthOnboardingView: React.FC<AuthOnboardingViewProps> = ({ onSucces
               setErrorMessage('');
             }}
           />
-          <View style={{ height: 16 }} />
-
-          {/* Auth info card */}
-          <View style={styles.demoBox}>
-            <Text style={styles.demoHeader}>🔒 SECURED BY SUPABASE AUTH</Text>
-            <Text style={styles.demoPillText}>Sign up to create a real account or log in with your credentials. Admin access requires the CHOW9JA-ADMIN passkey.</Text>
-          </View>
         </View>
       </View>
     );
@@ -160,11 +153,11 @@ export const AuthOnboardingView: React.FC<AuthOnboardingViewProps> = ({ onSucces
         <Text style={styles.formTitle}>
           {mode === 'login' ? 'Chow Secure Authentication' : 'Create Chow Account'}
         </Text>
-        <Text style={styles.formSub}>
-          {mode === 'login'
-            ? 'Sign in to access your saved addresses, track orders, or manage kitchen ops.'
-            : 'Register your account powered by Supabase Authentication.'}
-        </Text>
+        {mode === 'login' && (
+          <Text style={styles.formSub}>
+            Sign in to access your saved addresses, track orders, or manage kitchen ops.
+          </Text>
+        )}
       </View>
 
       {/* Role Switcher Pill Bar (Customer vs Admin) */}
@@ -327,14 +320,6 @@ export const AuthOnboardingView: React.FC<AuthOnboardingViewProps> = ({ onSucces
           </Text>
         </TouchableOpacity>
       </View>
-
-      {/* Supabase backend badge */}
-      <View style={styles.supabaseFootnote}>
-        <Text style={styles.supabaseIcon}>⚡</Text>
-        <Text style={styles.supabaseText}>
-          Powered by Supabase Auth & PostgreSQL database
-        </Text>
-      </View>
     </ScrollView>
   );
 };
@@ -405,50 +390,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 32,
     marginTop: -24,
     ...ChowTheme.shadows.prominent,
-  },
-  demoBox: {
-    backgroundColor: ChowTheme.colors.creamCard,
-    padding: 12,
-    borderRadius: ChowTheme.radii.md,
-    borderWidth: 1,
-    borderColor: ChowTheme.colors.border,
-    alignItems: 'center',
-  },
-  demoHeader: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: ChowTheme.colors.textMuted,
-    letterSpacing: 1,
-    marginBottom: 8,
-  },
-  demoButtonsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    width: '100%',
-  },
-  demoPill: {
-    flex: 1,
-    backgroundColor: ChowTheme.colors.white,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: ChowTheme.radii.pill,
-    borderWidth: 1,
-    borderColor: ChowTheme.colors.border,
-    alignItems: 'center',
-  },
-  demoPillText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: ChowTheme.colors.brown,
-  },
-  demoAdminPill: {
-    backgroundColor: ChowTheme.colors.brown,
-    borderColor: ChowTheme.colors.brown,
-  },
-  demoAdminPillText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: ChowTheme.colors.cream,
   },
   formContainer: {
     padding: ChowTheme.spacing.xl,
@@ -587,20 +528,5 @@ const styles = StyleSheet.create({
     color: ChowTheme.colors.brown,
     fontWeight: '800',
     fontSize: 13,
-  },
-  supabaseFootnote: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 24,
-    gap: 6,
-  },
-  supabaseIcon: {
-    fontSize: 12,
-  },
-  supabaseText: {
-    fontSize: 11,
-    color: ChowTheme.colors.textMuted,
-    fontWeight: '500',
   },
 });

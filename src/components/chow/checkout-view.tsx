@@ -128,17 +128,6 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
           styles.scrollContent,
           { paddingBottom: 120 + Math.max(insets.bottom, 16) },
         ]}>
-        {/* Mock Payment Test Banner */}
-        <View style={styles.testModeBanner}>
-          <View style={styles.testBadgeRow}>
-            <Text style={styles.testBadge}>MOCK GATEWAY</Text>
-            <Text style={styles.testModeTitle}>TEST PAYMENT — NO REAL MONEY IS CHARGED</Text>
-          </View>
-          <Text style={styles.testModeDesc}>
-            Payment will be simulated instantly. Your order will be stored with a unique ID and marked as paid (test mode).
-          </Text>
-        </View>
-
         {/* Step Indicator */}
         <View style={styles.stepBanner}>
           <Text style={styles.stepTitle}>Final Step: Delivery & Payment</Text>
@@ -715,43 +704,7 @@ const styles = StyleSheet.create({
     color: ChowTheme.colors.textPrimary,
     marginBottom: 10,
   },
-  testModeBanner: {
-    backgroundColor: ChowTheme.colors.brownDark,
-    borderRadius: ChowTheme.radii.lg,
-    padding: 12,
-    marginBottom: 12,
-    borderWidth: 1.5,
-    borderColor: ChowTheme.colors.nude,
-  },
-  testBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-    flexWrap: 'wrap',
-  },
-  testBadge: {
-    backgroundColor: ChowTheme.colors.brown,
-    color: ChowTheme.colors.cream,
-    fontSize: 9,
-    fontWeight: '900',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    letterSpacing: 0.5,
-  },
-  testModeTitle: {
-    color: ChowTheme.colors.cream,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    flex: 1,
-  },
-  testModeDesc: {
-    color: ChowTheme.colors.nudeLight,
-    fontSize: 11,
-    lineHeight: 15,
-  },
+
   errorAlert: {
     backgroundColor: ChowTheme.colors.dangerLight,
     padding: 10,
