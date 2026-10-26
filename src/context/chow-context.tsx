@@ -323,6 +323,111 @@ export const ChowProvider = ({ children }: { children: ReactNode }) => {
   const [currentRole, setCurrentRole] = useState<'customer' | 'admin'>('customer');
   const [user, setUser] = useState<UserProfile>(GUEST_USER);
 
+  // ── Load orders from public.orders table ──────────────────────────────────
+  const loadOrders = async (userId: string, role: 'customer' | 'admin') => {
+    const query = supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    // Admins see all orders; customers see only their own
+    if (role !== 'admin') {
+      query.eq('user_id', userId);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.warn('[Chow] Orders fetch error:', error.message);
+      return;
+    }
+
+    const mapped: Order[] = (data ?? []).map((row) => ({
+      id: row.id,
+      orderNumber: row.order_number,
+      items: (row.items_json as CartItem[]) ?? [],
+      subtotal: row.subtotal,
+      deliveryFee: row.delivery_fee,
+      serviceFee: row.service_fee,
+      total: row.total,
+      status: row.status as OrderStatus,
+      statusUpdates: (row.status_updates_json as Order['statusUpdates']) ?? [
+        { status: row.status as OrderStatus, time: new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), note: 'Order placed' },
+      ],
+      address: row.address_json as DeliveryAddress,
+      specialInstructions: row.special_instructions ?? undefined,
+      paymentMethod: row.payment_method as Order['paymentMethod'],
+      paymentReference: row.payment_reference,
+      paymentStatus: row.payment_status as Order['paymentStatus'],
+      createdAt: new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      estimatedDeliveryTime: '20-30 mins',
+    }));
+
+    setOrders(mapped);
+  };
+
+  // ── Load addresses from public.addresses table ──────────────────────────────
+  const loadAddresses = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('addresses')
+      .select('*')
+      .eq('user_id', userId)
+      .order('is_default', { ascending: false });
+
+    if (error) {
+      console.warn('[Chow] Addresses fetch error:', error.message);
+      return;
+    }
+
+    const mapped: DeliveryAddress[] = (data ?? []).map((row) => ({
+      id: row.id,
+      title: row.title,
+      street: row.street,
+      area: row.area,
+      landmark: row.landmark ?? undefined,
+      isDefault: row.is_default,
+      phoneNumber: row.phone_number ?? '',
+    }));
+
+    setAddresses(mapped);
+  };
+
+  // ── Load profile from public.profiles table ─────────────────────────────────
+  const loadProfile = async (authUser: User) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.warn('[Chow] Profile fetch error:', error.message);
+      }
+
+      const profile = data ?? null;
+      const role: 'customer' | 'admin' =
+        profile?.role === 'admin' ? 'admin' : 'customer';
+
+      setCurrentRole(role);
+      setUser({
+        id: authUser.id,
+        fullName: profile?.full_name ?? authUser.user_metadata?.full_name ?? authUser.email?.split('@')[0] ?? '',
+        email: authUser.email ?? '',
+        phone: profile?.phone ?? authUser.user_metadata?.phone ?? '',
+        role,
+        addresses: [],
+      });
+
+      // Load addresses and orders for this user
+      loadAddresses(authUser.id);
+      loadOrders(authUser.id, role);
+    } catch (err) {
+      console.warn('[Chow] Unexpected profile error:', err);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   // ── Bootstrap: restore session & listen for auth changes ───────────────────
   useEffect(() => {
     // Load current session on mount
@@ -355,67 +460,63 @@ export const ChowProvider = ({ children }: { children: ReactNode }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Load profile from public.profiles table ─────────────────────────────────
-  const loadProfile = async (authUser: User) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authUser.id)
-        .single();
+  // ── Real-time order subscription (admin: all new orders; customer: own) ─────
+  useEffect(() => {
+    if (!session?.user) return;
 
-      if (error && error.code !== 'PGRST116') {
-        console.warn('[Chow] Profile fetch error:', error.message);
-      }
+    const channel = supabase
+      .channel('orders-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'orders' },
+        (payload) => {
+          const row = payload.new as Record<string, unknown>;
+          // Customers only receive their own order events
+          if (currentRole !== 'admin' && row['user_id'] !== session.user.id) return;
+          const newOrder: Order = {
+            id: row['id'] as string,
+            orderNumber: row['order_number'] as string,
+            items: (row['items_json'] as CartItem[]) ?? [],
+            subtotal: row['subtotal'] as number,
+            deliveryFee: row['delivery_fee'] as number,
+            serviceFee: row['service_fee'] as number,
+            total: row['total'] as number,
+            status: row['status'] as OrderStatus,
+            statusUpdates: [{ status: row['status'] as OrderStatus, time: new Date(row['created_at'] as string).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), note: 'Order placed' }],
+            address: row['address_json'] as DeliveryAddress,
+            specialInstructions: (row['special_instructions'] as string) ?? undefined,
+            paymentMethod: row['payment_method'] as Order['paymentMethod'],
+            paymentReference: row['payment_reference'] as string,
+            paymentStatus: row['payment_status'] as Order['paymentStatus'],
+            createdAt: new Date(row['created_at'] as string).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            estimatedDeliveryTime: '20-30 mins',
+          };
+          setOrders((prev) => {
+            // Avoid duplicates (the createOrder local optimistic update may already be present)
+            if (prev.some((o) => o.id === newOrder.id)) return prev;
+            return [newOrder, ...prev];
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders' },
+        (payload) => {
+          const row = payload.new as Record<string, unknown>;
+          setOrders((prev) =>
+            prev.map((o) =>
+              o.id === (row['id'] as string)
+                ? { ...o, status: row['status'] as OrderStatus }
+                : o
+            )
+          );
+        }
+      )
+      .subscribe();
 
-      const profile = data ?? null;
-      const role: 'customer' | 'admin' =
-        profile?.role === 'admin' ? 'admin' : 'customer';
-
-      setCurrentRole(role);
-      setUser({
-        id: authUser.id,
-        fullName: profile?.full_name ?? authUser.user_metadata?.full_name ?? authUser.email?.split('@')[0] ?? '',
-        email: authUser.email ?? '',
-        phone: profile?.phone ?? authUser.user_metadata?.phone ?? '',
-        role,
-        addresses: [],
-      });
-
-      // Load addresses for this user
-      loadAddresses(authUser.id);
-    } catch (err) {
-      console.warn('[Chow] Unexpected profile error:', err);
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
-  // ── Load addresses from public.addresses table ──────────────────────────────
-  const loadAddresses = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('addresses')
-      .select('*')
-      .eq('user_id', userId)
-      .order('is_default', { ascending: false });
-
-    if (error) {
-      console.warn('[Chow] Addresses fetch error:', error.message);
-      return;
-    }
-
-    const mapped: DeliveryAddress[] = (data ?? []).map((row) => ({
-      id: row.id,
-      title: row.title,
-      street: row.street,
-      area: row.area,
-      landmark: row.landmark ?? undefined,
-      isDefault: row.is_default,
-      phoneNumber: row.phone_number ?? '',
-    }));
-
-    setAddresses(mapped);
-  };
+    return () => { supabase.removeChannel(channel); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id, currentRole]);
 
   // ── Auth: sign in ───────────────────────────────────────────────────────────
   const signIn = async (email: string, password: string, role: 'customer' | 'admin' = 'customer') => {
@@ -617,6 +718,14 @@ export const ChowProvider = ({ children }: { children: ReactNode }) => {
         return order;
       })
     );
+    // Persist status change to Supabase (admin action)
+    supabase
+      .from('orders')
+      .update({ status })
+      .eq('id', orderId)
+      .then(({ error }) => {
+        if (error) console.warn('[Chow] Order status update error:', error.message);
+      });
   };
 
   const updateOrderPaymentStatus = (orderId: string, paymentStatus: 'Paid' | 'Processing' | 'Failed') =>

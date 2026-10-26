@@ -19,18 +19,27 @@ export default function AppTabs() {
   return (
     <Tabs>
       <TabSlot style={{ height: '100%', backgroundColor: ChowTheme.colors.cream }} />
-      {isDesktop && (
-        <TabList asChild>
-          <CustomTabList>
-            <TabTrigger name="home" href="/" asChild>
-              <TabButton>🍲 Chow Delicacies</TabButton>
-            </TabTrigger>
-            <TabTrigger name="explore" href="/explore" asChild>
-              <TabButton>⚙️ Kitchen Ops (Admin)</TabButton>
-            </TabTrigger>
-          </CustomTabList>
-        </TabList>
-      )}
+      {/*
+       * TabList MUST always be rendered so that expo-router/ui's Tabs component
+       * can parse the TabTrigger children and register screens via
+       * parseTriggersFromChildren(). Conditionally omitting it with
+       * `{isDesktop && <TabList>}` causes zero screens to be registered on
+       * mobile, triggering "Couldn't find any screens for the navigator".
+       *
+       * On mobile/narrow viewports the TabList is hidden via display:'none'
+       * so it has no visual footprint. ChowMainScreen renders its own
+       * bottom navigation on mobile.
+       */}
+      <TabList asChild style={!isDesktop ? styles.hidden : undefined}>
+        <CustomTabList isDesktop={isDesktop}>
+          <TabTrigger name="home" href="/" asChild>
+            <TabButton>🍲 Chow Delicacies</TabButton>
+          </TabTrigger>
+          <TabTrigger name="explore" href="/explore" asChild>
+            <TabButton>⚙️ Kitchen Ops (Admin)</TabButton>
+          </TabTrigger>
+        </CustomTabList>
+      </TabList>
     </Tabs>
   );
 }
@@ -53,7 +62,11 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
   );
 }
 
-export function CustomTabList(props: TabListProps) {
+export function CustomTabList({ isDesktop, ...props }: TabListProps & { isDesktop?: boolean }) {
+  if (!isDesktop) {
+    return <View style={styles.hidden}>{props.children}</View>;
+  }
+
   return (
     <View {...props} style={styles.tabListContainer}>
       <View style={styles.innerContainer}>
@@ -71,6 +84,9 @@ export function CustomTabList(props: TabListProps) {
 }
 
 const styles = StyleSheet.create({
+  hidden: {
+    display: 'none',
+  },
   tabListContainer: {
     position: 'absolute',
     bottom: 0,

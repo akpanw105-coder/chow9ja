@@ -40,6 +40,7 @@ export default function ChowMainScreen() {
     orders,
     isAuthenticated,
     authLoading,
+    currentRole,
     setCurrentTrackingOrderId,
   } = useChow();
 
@@ -100,27 +101,29 @@ export default function ChowMainScreen() {
 
         {/* Header Right Actions */}
         <View style={styles.navRightActions}>
-          {/* Admin Switcher Pill */}
-          <TouchableOpacity
-            onPress={() => {
-              if (activeScreen === 'admin') {
-                setActiveScreen('menu');
-              } else {
-                setActiveScreen('admin');
-              }
-            }}
-            style={[
-              styles.rolePill,
-              activeScreen === 'admin' && styles.rolePillActive,
-            ]}>
-            <Text
+          {/* Admin Switcher Pill — only visible to admin role */}
+          {currentRole === 'admin' && (
+            <TouchableOpacity
+              onPress={() => {
+                if (activeScreen === 'admin') {
+                  setActiveScreen('menu');
+                } else {
+                  setActiveScreen('admin');
+                }
+              }}
               style={[
-                styles.rolePillText,
-                activeScreen === 'admin' && styles.rolePillTextActive,
+                styles.rolePill,
+                activeScreen === 'admin' && styles.rolePillActive,
               ]}>
-              {activeScreen === 'admin' ? 'Exit Admin' : 'Admin'}
-            </Text>
-          </TouchableOpacity>
+              <Text
+                style={[
+                  styles.rolePillText,
+                  activeScreen === 'admin' && styles.rolePillTextActive,
+                ]}>
+                {activeScreen === 'admin' ? 'Exit Admin' : 'Admin'}
+              </Text>
+            </TouchableOpacity>
+          )}
 
           {/* Cart Icon Badge */}
           <TouchableOpacity

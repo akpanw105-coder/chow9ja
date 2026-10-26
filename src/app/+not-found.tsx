@@ -8,7 +8,7 @@ export default function NotFoundScreen() {
       <Stack.Screen options={{ title: 'Chow - Page Not Found' }} />
       <View style={styles.container}>
         <Text style={styles.emoji}>🍲</Text>
-        <Text style={styles.title}>This delicacy doesn't exist.</Text>
+        <Text style={styles.title}>This delicacy doesn&apos;t exist.</Text>
         <Text style={styles.subtitle}>
           The page you requested could not be found or has moved.
         </Text>
