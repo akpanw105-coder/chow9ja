@@ -326,14 +326,17 @@ export const ChowProvider = ({ children }: { children: ReactNode }) => {
 
   // ── Load orders from public.orders table ──────────────────────────────────
   const loadOrders = async (userId: string, role: 'customer' | 'admin') => {
-    const query = supabase
+    // Use `let` so the builder returned by .eq() can be reassigned.
+    let query = supabase
       .from('orders')
       .select('*')
       .order('created_at', { ascending: false });
 
-    // Admins see all orders; customers see only their own
+    // Admins see all orders; customers see only their own.
+    // IMPORTANT: The Supabase query builder is immutable — .eq() returns a new
+    // instance and must be reassigned, otherwise the filter is silently discarded.
     if (role !== 'admin') {
-      query.eq('user_id', userId);
+      query = query.eq('user_id', userId);
     }
 
     const { data, error } = await query;
@@ -351,7 +354,9 @@ export const ChowProvider = ({ children }: { children: ReactNode }) => {
       serviceFee: row.service_fee,
       total: row.total,
       status: row.status as OrderStatus,
-      statusUpdates: (row.status_updates_json as Order['statusUpdates']) ?? [
+      // status_updates_json is not a DB column; fall back to a single entry from
+      // the stored status field so the tracking view always has something to show.
+      statusUpdates: [
         { status: row.status as OrderStatus, time: new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), note: 'Order placed' },
       ],
       address: row.address_json as DeliveryAddress,
@@ -628,16 +633,85 @@ export const ChowProvider = ({ children }: { children: ReactNode }) => {
     paymentMethod: 'Paystack Card' | 'Bank Transfer (Online)' | 'USSD';
     specialInstructions?: string;
   }): Promise<Order> => {
+    // ── Auth guard ────────────────────────────────────────────────────────────
+    // The RLS INSERT policy requires auth.uid() = user_id. We enforce this on
+    // the client side too so the user gets a clear message instead of a silent
+    // database rejection. The cart is NOT touched here — if this throws the
+    // customer can sign in and retry without losing their items.
+    if (!session?.user?.id) {
+      throw new Error(
+        'You must be signed in to place an order. Please log in and try again.'
+      );
+    }
+
     const subtotal = cartSubtotal;
     const deliveryFee = 800;
     const serviceFee = 400;
     const total = subtotal + deliveryFee + serviceFee;
     const randomSuffix = Math.floor(10000 + Math.random() * 90000);
     const orderNumber = `CHW-${randomSuffix}`;
-    const orderId = `ord-${randomSuffix}`;
+    const paymentReference = `TEST-SIM-${Math.floor(1000000000 + Math.random() * 9000000000)}`;
+
+    const statusUpdates: Order['statusUpdates'] = [
+      {
+        status: 'placed',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        note: `Payment simulated via ${paymentMethod} (Test Mode)`,
+      },
+      {
+        status: 'confirmed',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        note: 'Chow kitchen accepted your order',
+      },
+    ];
+
+    // ── Persist to Supabase FIRST ─────────────────────────────────────────────
+    // We insert before updating local state so that:
+    //   • The cart is preserved if the save fails (safe retry, no duplicate).
+    //   • The success modal only shows after the DB has confirmed the order.
+    //   • The order always gets a real Supabase UUID instead of a local fake ID.
+    const dbPayload: Record<string, unknown> = {
+      order_number: orderNumber,
+      user_id: session.user.id,      // always present — required by RLS policy
+      subtotal,
+      delivery_fee: deliveryFee,
+      service_fee: serviceFee,
+      total,
+      status: 'confirmed',
+      payment_method: paymentMethod,
+      payment_reference: paymentReference,
+      payment_status: 'payment simulated', // TEST MODE — not a real payment
+      address_json: {
+        ...address,
+        customer_name: user?.fullName || 'Guest Customer',
+        customer_email: user?.email || '',
+        customer_phone: address.phoneNumber || user?.phone || '',
+      },
+      items_json: [...cart],
+      special_instructions: specialInstructions ?? null,
+    };
+
+    const { data, error } = await supabase
+      .from('orders')
+      .insert(dbPayload)
+      .select()
+      .single();
+
+    if (error) {
+      // Propagate a clear error — checkout catches this and shows paymentError.
+      // The cart is untouched so the customer can retry safely.
+      throw new Error(
+        error.code === '42501'
+          ? 'Order could not be saved: permission denied. Please sign out and sign back in, then try again.'
+          : `Order could not be saved: ${error.message}`
+      );
+    }
+
+    // ── DB confirmed — build the Order from the real database record ──────────
+    const savedId = data.id as string;
 
     const newOrder: Order = {
-      id: orderId,
+      id: savedId,
       orderNumber,
       items: [...cart],
       subtotal,
@@ -645,76 +719,20 @@ export const ChowProvider = ({ children }: { children: ReactNode }) => {
       serviceFee,
       total,
       status: 'confirmed',
-      statusUpdates: [
-        {
-          status: 'placed',
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          note: `Payment simulated via ${paymentMethod} (Test Mode)`,
-        },
-        {
-          status: 'confirmed',
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          note: 'Chow kitchen accepted your order',
-        },
-      ],
+      statusUpdates,
       address,
       specialInstructions,
       paymentMethod,
-      paymentReference: `TEST-SIM-${Math.floor(1000000000 + Math.random() * 9000000000)}`,
+      paymentReference,
       paymentStatus: 'payment simulated',
       createdAt: 'Just now',
       estimatedDeliveryTime: '20-30 mins',
     };
 
+    // Only commit to local state and clear the cart after a confirmed DB save.
     setOrders((prev) => [newOrder, ...prev]);
-    setCurrentTrackingOrderId(orderId);
+    setCurrentTrackingOrderId(savedId);
     clearCart();
-
-    // Persist to Supabase orders table
-    try {
-      const payload: Record<string, unknown> = {
-        order_number: orderNumber,
-        subtotal,
-        delivery_fee: deliveryFee,
-        service_fee: serviceFee,
-        total,
-        status: 'confirmed',
-        payment_method: paymentMethod,
-        payment_reference: newOrder.paymentReference,
-        payment_status: 'payment simulated',
-        address_json: {
-          ...address,
-          customer_name: user?.fullName || 'Guest Customer',
-          customer_email: user?.email || '',
-          customer_phone: address.phoneNumber || user?.phone || '',
-        },
-        items_json: newOrder.items,
-        special_instructions: specialInstructions ?? null,
-      };
-
-      if (session?.user?.id) {
-        payload.user_id = session.user.id;
-      }
-
-      const { data, error } = await supabase
-        .from('orders')
-        .insert(payload)
-        .select()
-        .single();
-
-      if (error) {
-        console.warn('[Chow] Order persist notice:', error.message);
-      } else if (data && data.id) {
-        // Update local state with generated Supabase database UUID if returned
-        setOrders((prev) =>
-          prev.map((o) => (o.id === orderId ? { ...o, id: data.id } : o))
-        );
-        setCurrentTrackingOrderId(data.id);
-        return { ...newOrder, id: data.id };
-      }
-    } catch (dbErr) {
-      console.warn('[Chow] Unexpected error saving order to Supabase:', dbErr);
-    }
 
     return newOrder;
   };
